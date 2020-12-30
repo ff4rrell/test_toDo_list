@@ -95,7 +95,7 @@ const IndexTodoList = () => {
                     return (
                         <div key={it.id}>
                             <div>
-                                title: {it.title} id: {it.id}  <button onClick={()=> changeCompleted(it.id)}> {it.completed ? "done" : "notDone"}</button>
+                                title: {it.title}  id: {it.id}  <button onClick={()=> changeCompleted(it.id)}> {it.completed ? "done" : "notDone"}</button>
                             </div>
                     
                                 <button onClick={()=> deleteTodo(it.id)}>DEL</button>
