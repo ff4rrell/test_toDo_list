@@ -1,25 +1,47 @@
 import React, {useState, useEffect} from 'react';
-
+import ButtonFilter from './companent/ButtonFilter';
+import RenderFilterTodoList from './companent/RenderFilterTodoList';
+import BntConsoleAndDelAllActiveTodo from './companent/BntConsoleAndDelAllActiveTodo';
+import Clock from './companent/Clock';
 
 
 const IndexTodoList = () => {
     const [todoList, setTodoList] = useState([]);
     const [newTodoTitle, setNewTodoTitle] = useState('');
     const [status, setStatus]= useState('all');
-    const [count, setCount] = useState(0);
+    const [counterActiveTodo, setCounterActiveTodo] = useState((todoList.filter(it=> !it.completed).length));
+
+
+    const getAtiveTodo = () => {
+        fetch('http://localhost:3001/todo')
+            .then( response => response.json())
+            .then( todoListFromServer => setCounterActiveTodo((todoListFromServer.filter( item => !item.completed).length)))
+    }
     
+    useEffect(()=>{
+        getAtiveTodo()
+        console.log("toyota")
+    }, [todoList])
+
+    
+    const getTodoListFromServer = () => {
+        fetch(`http://localhost:3001/todo?filter=${status}`, {
+            method: 'get'
+        }).then(it => it.json())
+          .then(todoListFromServer => setTodoList((todoListFromServer)) )
+    }
 
     useEffect(() => {
-        fetch('http://localhost:3001/todo')
-            .then( todo => todo.json())
-            .then(todoListFromServer => setTodoList((todoListFromServer)));
-    }, [])
+        getTodoListFromServer();
+        getAtiveTodo();
+    }, [status]);
 
     const deleteTodo = (id) => {
         fetch(`http://localhost:3001/todo/${id}`, {
             method: 'delete'
         }).then( todo => todo.json())
-          .then(todoListFromServer => setTodoList((todoListFromServer)));
+          .then(() => getTodoListFromServer());
+       
     };
 
     const addNewTodo = () => {
@@ -31,104 +53,58 @@ const IndexTodoList = () => {
                 'content-type': 'application/json'
             }
         }).then(todo => todo.json())
-          .then(todoListFromServer => setTodoList((todoListFromServer)));
+          .then(() => getTodoListFromServer());
+          
     }
 
     const changeCompleted = (id) => {
         fetch(`http://localhost:3001/todo/${id}`, {
             method: 'post'
         }).then(it => it.json())
-          .then(todoListFromServer => setTodoList((todoListFromServer)))
+          .then(() => getTodoListFromServer());
+        getAtiveTodo();
+          
     }
 
     const allStatus = () => {
-        setStatus('all')
+        setStatus('all');
+        
     };
-
+    
     const completedStatus = () => {
-        setStatus('completed')
+        setStatus('completed'); 
     };
 
     const activeStatus = () => {
-        setStatus('active')
+        setStatus('active');
+        
     };
-    
 
-    if((((todoList.filter( it => !it.completed)).length)  !== count) ){
-        if((((todoList.filter( it => !it.completed)).length) < count) ){
-            setCount(0);
-            console.log("-")
-        }else{
-        todoList.map(item => {
-            if(!item.completed){
-                setCount(count + 1);
-                console.log("+");
-            }
-       
+    const deleteCompletedTodo = () => {
+        fetch(`http://localhost:3001/todo/completedTodo`, {
+            method: 'delete'
         })
-        }
+            .then(todo => todo.json())
+            .then(() => getTodoListFromServer())
+        console.log("it's work")
     }
-  
+    
+    const toyota = "Управляей мечтой"
     
     return(
         <div>
-            
-            Active Todo: {count}
-            
-                <div><button onClick={()=> {console.log(todoList)}}>console.log</button></div>
-                
+        
+        <Clock/>
+            Active Todo:  {counterActiveTodo} 
+        <BntConsoleAndDelAllActiveTodo todoList={todoList} dltAllActiveTodo={deleteCompletedTodo}/>
 
-            <input type='text' value={newTodoTitle} onChange={event => setNewTodoTitle(event.target.value)}/>
+        <input type='text' value={newTodoTitle} onChange={event => setNewTodoTitle(event.target.value)}/>
             <button onClick={addNewTodo}>add new todo</button>
 
-            <div>
-                <button onClick={allStatus}>ALL</button> 
-                <button onClick={activeStatus}>active</button>
-                <button onClick={completedStatus}>completed</button>
-            </div>
+        <ButtonFilter allStatus={allStatus} activeStatus={activeStatus} completedStatus={completedStatus} toyota={toyota}/>
 
-            {todoList.map( it => {
-
-                
-                if(status === 'active' && !it.completed){
-                    
-                    return (
-                        <div key={it.id}>
-                            <div>
-                                title: {it.title}  id: {it.id}  <button onClick={()=> changeCompleted(it.id)}> {it.completed ? "done" : "notDone"}</button>
-                            </div>
-                    
-                                <button onClick={()=> deleteTodo(it.id)}>DEL</button>
-                                <div>==========================</div>
-                                
-                        </div>
-                    )
-                }else if(status === 'completed' && it.completed ){
-                    return (
-                        <div key={it.id}>
-                            <div>
-                                title: {it.title} id: {it.id}  <button onClick={()=> changeCompleted(it.id)}> {it.completed ? "done" : "notDone"}</button>
-                            </div>
-                    
-                                <button onClick={()=> deleteTodo(it.id)}>DEL</button>
-                                <div>==========================</div>
-                        </div>
-                    )
-                }else if(status === 'all'){
-                    return(
-                        <div key={it.id}>
-                            <div>
-                                title: {it.title} id: {it.id}  <button onClick={()=> changeCompleted(it.id)}> {it.completed ? "done" : "notDone"}</button>
-                            </div>
-                    
-                                <button onClick={()=> deleteTodo(it.id)}>DEL</button>
-                                <div>==========================</div>
-                        </div>
-                    )
-                }
-
-            })}
-            
+        <RenderFilterTodoList todoList={todoList} changeCompleted={changeCompleted} deleteTodo={deleteTodo}/>    
+        
             
         </div>
     )
