@@ -102,6 +102,17 @@ app.post('/todo/:id', ( req, res) => {
     res.send(todoList)
 })
 
+
+
+app.listen(port, ()=> {
+    console.log(`Server is running at http://localhost:${port}`);
+});
+
+
+
+
+/*
+
 app.get('/test', (req, res, next) => {
     const test = req.query.filter;
 
@@ -123,6 +134,4 @@ app.get('/test', (req, res, next) => {
 })
 
 
-app.listen(port, ()=> {
-    console.log(`Server is running at http://localhost:${port}`);
-});
+*/
