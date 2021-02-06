@@ -3,6 +3,7 @@ import ButtonFilter from './companent/ButtonFilter';
 import RenderFilterTodoList from './companent/RenderFilterTodoList';
 import BntConsoleAndDelAllActiveTodo from './companent/BntConsoleAndDelAllActiveTodo';
 import Clock from './companent/Clock';
+import Input from './companent/Input'
 
 
 const IndexTodoList = () => {
@@ -10,18 +11,28 @@ const IndexTodoList = () => {
     const [newTodoTitle, setNewTodoTitle] = useState('');
     const [status, setStatus]= useState('all');
     const [counterActiveTodo, setCounterActiveTodo] = useState((todoList.filter(it=> !it.completed).length));
+    ////////////////////////////////////////////////////////////////////////////////////////////////
 
+    const PATH = {
+        all: 'all',
+        active: 'active',
+        completed: 'completed',
+        completedTodo: 'completedTodo'
+    }
+    ////////////////////////////////////////////////////////////////////////////////////////////////
 
     const getAtiveTodo = () => {
         fetch('http://localhost:3001/todo')
             .then( response => response.json())
             .then( todoListFromServer => setCounterActiveTodo((todoListFromServer.filter( item => !item.completed).length)))
     }
-    
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+
     useEffect(()=>{
         getAtiveTodo()
         console.log("toyota")
     }, [todoList])
+    ////////////////////////////////////////////////////////////////////////////////////////////////
 
     
     const getTodoListFromServer = () => {
@@ -30,11 +41,13 @@ const IndexTodoList = () => {
         }).then(it => it.json())
           .then(todoListFromServer => setTodoList((todoListFromServer)) )
     }
+    ////////////////////////////////////////////////////////////////////////////////////////////////
 
     useEffect(() => {
         getTodoListFromServer();
         getAtiveTodo();
     }, [status]);
+    ////////////////////////////////////////////////////////////////////////////////////////////////
 
     const deleteTodo = (id) => {
         fetch(`http://localhost:3001/todo/${id}`, {
@@ -43,6 +56,7 @@ const IndexTodoList = () => {
           .then(() => getTodoListFromServer());
        
     };
+    ////////////////////////////////////////////////////////////////////////////////////////////////
 
     const addNewTodo = () => {
         setNewTodoTitle('')
@@ -56,6 +70,7 @@ const IndexTodoList = () => {
           .then(() => getTodoListFromServer());
           
     }
+    ////////////////////////////////////////////////////////////////////////////////////////////////
 
     const changeCompleted = (id) => {
         fetch(`http://localhost:3001/todo/${id}`, {
@@ -65,45 +80,63 @@ const IndexTodoList = () => {
         getAtiveTodo();
           
     }
+    ////////////////////////////////////////////////////////////////////////////////////////////////
 
     const allStatus = () => {
-        setStatus('all');
+        setStatus(PATH.all);
         
     };
-    
-    const completedStatus = () => {
-        setStatus('completed'); 
-    };
+    ////////////////////////////////////////////////////////////////////////////////////////////////
 
     const activeStatus = () => {
-        setStatus('active');
+        setStatus(PATH.active);
         
     };
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+
+    const completedStatus = () => {
+        setStatus(PATH.completed); 
+    };
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
 
     const deleteCompletedTodo = () => {
-        fetch(`http://localhost:3001/todo/completedTodo`, {
+        fetch(`http://localhost:3001/todo/${PATH.completedTodo}`, {
             method: 'delete'
         })
             .then(todo => todo.json())
             .then(() => getTodoListFromServer())
         console.log("it's work")
     }
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+
     
-    const toyota = "Управляей мечтой"
     
     return(
         <div>
         
         <Clock/>
-            Active Todo:  {counterActiveTodo} 
-        <BntConsoleAndDelAllActiveTodo todoList={todoList} dltAllActiveTodo={deleteCompletedTodo}/>
 
-        <input type='text' value={newTodoTitle} onChange={event => setNewTodoTitle(event.target.value)}/>
-            <button onClick={addNewTodo}>add new todo</button>
+        Active Todo:  {counterActiveTodo} 
 
-        <ButtonFilter allStatus={allStatus} activeStatus={activeStatus} completedStatus={completedStatus} toyota={toyota}/>
+        <BntConsoleAndDelAllActiveTodo todoList={todoList} 
+                dltAllActiveTodo={deleteCompletedTodo}
+        />
 
-        <RenderFilterTodoList todoList={todoList} changeCompleted={changeCompleted} deleteTodo={deleteTodo}/>    
+
+        <Input newTodoTitle={newTodoTitle} setNewTodoTitle={setNewTodoTitle} 
+                addNewTodo={addNewTodo}
+        />
+
+
+        <ButtonFilter allStatus={allStatus} activeStatus={activeStatus} 
+                completedStatus={completedStatus} 
+        />
+
+        <RenderFilterTodoList todoList={todoList} changeCompleted={changeCompleted} 
+                deleteTodo={deleteTodo}
+
+        />    
         
             
         </div>
