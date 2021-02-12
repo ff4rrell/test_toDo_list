@@ -1,203 +1,142 @@
-const express = require('express');
+const express = require("express");
 const app = express();
 const port = 3001;
-const cors = require('cors');
+const cors = require("cors");
 
 app.use(cors());
 app.use(express.json());
 
-
-let idCounter = 0;
-
-const PATH = {
-    all: 'all',
-    active: 'active',
-    completed: 'completed',
-    completedTodo:'completedTodo'
-}
+const FILTERS = {
+  all: "all",
+  active: "active",
+  completed: "completed",
+};
 
 ///////////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////////
-// 
 /////////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////////
 
 class Todo {
-    constructor(title, completed = false, id = ++idCounter){
-        this.title = title;
-        this.completed = completed;
-        this.id = id;
-    }
+  constructor(title, completed = false, id) {
+    this.title = title;
+    this.completed = completed;
+    this.id = id;
+  }
 }
 
 // TodoManager
 /////////////////////////////////////////////////////////////////////////////////
 class TodoList {
-    constructor(){
-        this.todoList = []
-    }
-    /////////////////////////////////////////////////////////////////////////////////
-    addTodo(title){
-        if(title && !this.todoList.find(it => it.title === title)){
-            this.todoList.push(new Todo(title))
-        }
-    }
-    /////////////////////////////////////////////////////////////////////////////////
-    deleteTodo(id){
-        this.todoList = this.todoList.filter(it => it.id !== id)
-    }
-    dltAllcompletedTodo(){
-        this.todoList = this.todoList.filter(it => !it.completed)
-    }
-    ////////////////////////////////////////////////////////////////////////////////////////////////
-    findTodo(title){
-        return this.todoList.find(it => it.title === title)
-    }
-    /////////////////////////////////////////////////////////////////////////////////
-    changeCompleted(id){
-        this.todoList.find( it => {
-            if(it.id === id){
-                it.completed = !it.completed
-            }
-        })
-    }
-    /////////////////////////////////////////////////////////////////////////////////
-    findTodoforId(id){
-        
-        return this.todoList.find(it => it.id === id)
-    }
-    /////////////////////////////////////////////////////////////////////////////////
-    sortTodoListForCompeted(filter, path){
-        return this.todoList.filter( it => {
-            if(filter === path.all){
-                return it
-            }else if((filter === path.active) && !it.completed ){
-                return it
-            }else if((filter === path.completed) && it.completed){
-                return it
-            }
-        });
-    }
+  constructor() {
+    this.todoList = [];
+    this.idCounter = 0;
+  }
 
+  addTodo(title) {
+    if (title && !this.findTodo(title)) {
+      this.todoList.push(new Todo(title, undefined, ++this.idCounter));
+    }
+  }
+
+  deleteTodo(id) {
+    this.todoList = this.todoList.filter((it) => it.id !== id);
+  }
+
+  dltAllcompletedTodo() {
+    this.todoList = this.todoList.filter((it) => !it.completed);
+  }
+
+  findTodo(title) {
+    return this.todoList.find((it) => it.title === title);
+  }
+
+  changeCompleted(id) {
+    const todo = this.findTodoforId(id);
+    todo.completed = !todo.completed;
+  }
+
+  findTodoforId(id) {
+    return this.todoList.find((it) => it.id === id);
+  }
+
+  sortTodoListForCompeted(filter) {
+    return this.todoList.filter(({ completed }) => {
+      switch (filter) {
+        case FILTERS.all:
+          return true;
+        case FILTERS.active:
+          return !completed;
+        case FILTERS.completed:
+          return completed;
+      }
+    });
+  }
 }
 
-////////////////////////////////////////////////////////////////////////////////////////////////
+const todoList = new TodoList();
 
-
-
-let todoList = new TodoList()
-
-////////////////////////////////////////////////////////////////////////////////////////////////
-
-app.get('/', (req, res)=> {
-    res.send('Hello Novus Ordo Seclorum')
+app.get("/", (req, res) => {
+  res.send("Hello Novus Ordo Seclorum");
 });
 
-////////////////////////////////////////////////////////////////////////////////////////////////
+app.get("/todo", (req, res, next) => {
+  const filter = req.query.filter;
 
-app.get('/todo', (req, res) => {
-    
-    const filter = req.query.filter
-    //////////////////////////////////////////////////////////////////////////////////
-    if(filter){
-                                                                             
-        ////////////////////////////////////                                        //        
-            if(!isNaN(Number(filter))){   //                                        //
-                return next();            //                                        //
-            }                             //                                        //
-        ////////////////////////////////////   
-                                             
-    let filterTodoList = todoList.sortTodoListForCompeted(filter, PATH) || {}       //
-                                                                                    //
-    res.send(filterTodoList)                                                        //
-                                                                                    //
-    }                                                                               //
-    //////////////////////////////////////////////////////////////////////////////////
-    res.send(todoList.todoList)
-    
-})
+  if (!filter) {
+    res.send(todoList.todoList);
+  }
 
+  if (!isNaN(Number(filter))) {
+    return next();
+  }
 
+  const filterTodoList = todoList.sortTodoListForCompeted(filter) || {};
 
-////////////////////////////////////////////////////////////////////////////////////////////////
-
-app.get('/todo/:id', (req, res) => {
-    const idTodo = req.params.id;
-    const todo = todoList.findTodoforId(Number(idTodo))
-    res.send(todo)
-})
-
-
-////////////////////////////////////////////////////////////////////////////////////////////////
-
-
-app.delete('/todo/:id', (req, res) => {
-    const todoIdToDelete = req.params.id
-    if(!isNaN(Number(todoIdToDelete))){
-        todoList.deleteTodo(Number(todoIdToDelete))
-    }else if(todoIdToDelete === PATH.completedTodo){
-        todoList.dltAllcompletedTodo()
-    }else{
-        res.send("error")
-    }
-
-    res.send(todoList.todoList)
-})
-
-////////////////////////////////////////////////////////////////////////////////////////////////
-
-
-app.put('/todo/', (req,res) => {
-    const newTodoTitle = req.body.title;
-
-    todoList.addTodo(newTodoTitle)
-
-    res.send(todoList.todoList)
-})
-
-////////////////////////////////////////////////////////////////////////////////////////////////
-
-
-app.post('/todo/:id', ( req, res) => {
-    const todoId = req.params.id
-
-
-    todoList.changeCompleted(Number(todoId))
-
-    res.send(todoList.todoList)
-})
-
-////////////////////////////////////////////////////////////////////////////////////////////////
-
-
-app.listen(port, ()=> {
-    console.log(`Server is running at http://localhost:${port}`);
+  res.send(filterTodoList);
 });
 
-///////////////////////////////////////////////////////////////////////
+app.get("/todo/counterActiveTodo", (req, res) => {
+  const counterActiveTodo = todoList.todoList.filter( it => !it.completed)
+  res.send(String(counterActiveTodo.length));
+});
 
+app.get("/todo/:id", (req, res) => {
+  const idTodo = req.params.id;
+  const todo = todoList.findTodoforId(Number(idTodo)) || {};
+  res.send(todo);
+});
 
-/*
+app.delete("/todo/completedTodo", (req, res) => {
+  todoList.dltAllcompletedTodo();
 
-app.get('/test', (req, res, next) => {
-    const test = req.query.filter;
+  res.send(todoList.todoList);
+});
 
-    console .log(test)
-    console.log(typeof(test))
-    let testToyota = 'toyota';
-    if(test === "all"){
-        testToyota = "all"
-    }else if(test === "active"){
-        testToyota = "active"
-    }else if(test === "completed"){
-        testToyota = "completed"
-    }
-    res.send(testToyota)
+app.delete("/todo/:id", (req, res) => {
+  const todoIdToDelete = Number(req.params.id);
 
-    let err = new Error('Not Found');
-    err.status = 404;
-    next(err);
-})
+  todoList.deleteTodo(todoIdToDelete);
 
+  res.send(todoList.todoList);
+});
 
-*/
+app.put("/todo/", (req, res) => {
+  const newTodoTitle = req.body.title;
+
+  todoList.addTodo(newTodoTitle);
+
+  res.send(todoList.todoList);
+});
+
+app.post("/todo/:id", (req, res) => {
+  const todoId = Number(req.params.id);
+
+  todoList.changeCompleted(todoId);
+
+  res.send(todoList.todoList);
+});
+
+app.listen(port, () => {
+  console.log(`Server is running at http://localhost:${port}`);
+});
